@@ -1,5 +1,3 @@
-// The exported code uses Tailwind CSS. Install Tailwind CSS in your dev environment to ensure all styles work.
-
 import React, { useState, useEffect } from 'react';
 import * as echarts from 'echarts';
 
@@ -36,18 +34,24 @@ const Challenge: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const initialDays: DayStatus[] = Array.from({ length: 30 }, (_, index) => ({
-      dayNumber: index + 1,
-      completed: false,
-      challenges: [
-        { id: 1, description: 'Morning Sun Salutation (10 mins)', completed: false },
-        { id: 2, description: 'Warrior Pose Series (15 mins)', completed: false },
-        { id: 3, description: 'Mindful Breathing Exercise (5 mins)', completed: false },
-        { id: 4, description: 'Balance Pose Practice (10 mins)', completed: false },
-        { id: 5, description: 'Evening Relaxation Flow (10 mins)', completed: false }
-      ]
-    }));
-    setDays(initialDays);
+    // Retrieve data from local storage
+    const savedDays = localStorage.getItem('challengeDays');
+    if (savedDays) {
+      setDays(JSON.parse(savedDays));
+    } else {
+      const initialDays: DayStatus[] = Array.from({ length: 30 }, (_, index) => ({
+        dayNumber: index + 1,
+        completed: false,
+        challenges: [
+          { id: 1, description: 'Morning Sun Salutation (10 mins)', completed: false },
+          { id: 2, description: 'Warrior Pose Series (15 mins)', completed: false },
+          { id: 3, description: 'Mindful Breathing Exercise (5 mins)', completed: false },
+          { id: 4, description: 'Balance Pose Practice (10 mins)', completed: false },
+          { id: 5, description: 'Evening Relaxation Flow (10 mins)', completed: false }
+        ]
+      }));
+      setDays(initialDays);
+    }
   }, []);
 
   useEffect(() => {
@@ -81,7 +85,9 @@ const Challenge: React.FC = () => {
         axisLabel: { show: false },
         detail: {
           valueAnimation: true,
-          formatter: '{value}%',
+          formatter: function(value:GLfloat) {
+            return `${(value).toFixed(2)}%`;
+          },
           color: '#8A6FDF',
           fontSize: 24,
           fontWeight: 'bold'
@@ -105,23 +111,26 @@ const Challenge: React.FC = () => {
   };
 
   const handleChallengeToggle = (dayNumber: number, challengeId: number) => {
-    setDays(prevDays => {
-      return prevDays.map(day => {
-        if (day.dayNumber === dayNumber) {
-          const updatedChallenges = day.challenges.map(challenge =>
-            challenge.id === challengeId
-              ? { ...challenge, completed: !challenge.completed }
-              : challenge
-          );
-          return {
-            ...day,
-            challenges: updatedChallenges,
-            completed: updatedChallenges.every(c => c.completed)
-          };
-        }
-        return day;
-      });
+    const updatedDays = days.map(day => {
+      if (day.dayNumber === dayNumber) {
+        const updatedChallenges = day.challenges.map(challenge =>
+          challenge.id === challengeId
+            ? { ...challenge, completed: !challenge.completed }
+            : challenge
+        );
+        return {
+          ...day,
+          challenges: updatedChallenges,
+          completed: updatedChallenges.every(c => c.completed)
+        };
+      }
+      return day;
     });
+
+    setDays(updatedDays);
+
+    // Save updated data to local storage
+    localStorage.setItem('challengeDays', JSON.stringify(updatedDays));
   };
 
   return (
@@ -143,7 +152,7 @@ const Challenge: React.FC = () => {
           <div id="progressChart" className="w-full h-full"></div>
         </div>
 
-        <div className="grid grid-cols-7  gap-4 max-w-4xl mx-auto">
+        <div className="grid grid-cols-7 gap-4 max-w-4xl mx-auto">
           {days.map((day) => (
             <div
               key={day.dayNumber}
